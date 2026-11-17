@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDF Studio</title>
+<meta name="description" content="Edit PDFs and scanned documents in your browser. Nothing is uploaded or stored.">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><span class="mark" aria-hidden="true"></span>PDF Studio</div>
+  <div class="grp">
+    <button id="btnOpen" class="btn primary">Open file</button>
+    <button id="btnUndo" class="btn" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="btnRedo" class="btn" title="Redo (Ctrl+Shift+Z)">Redo</button>
+  </div>
+  <div class="grp" aria-label="Zoom">
+    <button id="btnZoomOut" class="btn" aria-label="Zoom out">&minus;</button>
+    <span id="zoomLbl">100%</span>
+    <button id="btnZoomIn" class="btn" aria-label="Zoom in">+</button>
+    <button id="btnFit" class="btn">Fit width</button>
+  </div>
+  <div class="grp" aria-label="Pages">
+    <button id="btnThumbs" class="btn">Pages</button>
+    <button id="btnRotL" class="btn" title="Rotate page left" aria-label="Rotate page left">&#8634;</button>
+    <button id="btnRotR" class="btn" title="Rotate page right" aria-label="Rotate page right">&#8635;</button>
+    <button id="btnUp" class="btn" title="Move page up" aria-label="Move page up">&uarr;</button>
+    <button id="btnDown" class="btn" title="Move page down" aria-label="Move page down">&darr;</button>
+    <button id="btnAddPage" class="btn">Add page</button>
+    <button id="btnDelPage" class="btn">Delete page</button>
+  </div>
+  <div class="grp"><button id="btnOcr" class="btn">Run OCR</button></div>
+  <div class="grp right"><span id="pageLbl"></span><button id="btnExport" class="btn primary">Export PDF</button></div>
+</header>
+
+<div class="work">
+  <nav class="tools" id="tools" aria-label="Tools">
+    <button data-tool="select" aria-pressed="false">Select<kbd>V</kbd></button>
+    <button data-tool="edittext" aria-pressed="true">Edit text<kbd>E</kbd></button>
+    <button data-tool="text" aria-pressed="false">Add text<kbd>T</kbd></button>
+    <button data-tool="highlight" aria-pressed="false">Highlight<kbd>H</kbd></button>
+    <button data-tool="pen" aria-pressed="false">Draw<kbd>P</kbd></button>
+    <button data-tool="rect" aria-pressed="false">Box<kbd>R</kbd></button>
+    <button data-tool="ellipse" aria-pressed="false">Ellipse<kbd>O</kbd></button>
+    <button data-tool="line" aria-pressed="false">Line<kbd>L</kbd></button>
+    <button data-tool="whiteout" aria-pressed="false">Whiteout<kbd>W</kbd></button>
+    <button id="btnImage">Image<kbd>I</kbd></button>
+  </nav>
+  <aside class="thumbs" id="thumbs" aria-label="Page thumbnails"></aside>
+  <main id="stage" class="tool-edittext" tabindex="-1">
+    <div id="empty">
+      <div class="drop" id="dropzone">
+        <h1>Drop a PDF or a scan here</h1>
+        <p>Edit text in place, add your own, annotate, rearrange pages, then export.</p>
+        <button class="btn primary" id="btnOpen2">Choose files</button>
+        <ul>
+          <li>PDF, JPG and PNG files. Several at once are merged.</li>
+          <li>OCR makes scanned pages editable.</li>
+          <li>Everything stays in this browser tab. Nothing is uploaded or saved.</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+  <aside class="insp" id="insp" aria-label="Inspector">
+    <h2 id="inspTitle">Edit text</h2>
+    <p class="hint" id="inspHint"></p>
+    <div id="pageNote" class="note" hidden></div>
+    <div class="row" data-for="text rect ellipse line pen"><label for="pColor">Color</label><input type="color" id="pColor" value="#111111"></div>
+    <div class="row" data-for="rect ellipse"><label><input type="checkbox" id="pFillOn"> Fill</label><input type="color" id="pFill" value="#ffe14d"></div>
+    <div class="row" data-for="text"><label for="pFont">Font</label>
+      <select id="pFont"><option value="sans">Sans (Helvetica)</option><option value="serif">Serif (Times)</option><option value="mono">Mono (Courier)</option></select></div>
+    <div class="row" data-for="text"><label><input type="checkbox" id="pBold"> Bold</label><label><input type="checkbox" id="pItalic"> Italic</label></div>
+    <div class="row col" data-for="text"><label for="pSize">Size <output id="oSize">14</output> pt</label><input type="range" id="pSize" min="6" max="96" value="14"></div>
+    <div class="row col" data-for="rect ellipse line pen"><label for="pWidth">Line width <output id="oWidth">2</output> pt</label><input type="range" id="pWidth" min="0" max="24" step="0.5" value="2"></div>
+    <div class="row col" data-for="rect ellipse line pen image"><label for="pOp">Opacity <output id="oOp">100</output>%</label><input type="range" id="pOp" min="10" max="100" step="5" value="100"></div>
+    <div class="row" data-for="line"><label><input type="checkbox" id="pArrow"> Arrow head</label></div>
+    <p class="hint" data-for="whiteout">Whiteout hides content visually. The text underneath stays in the file unless you export with "Flatten pages".</p>
+    <button id="btnDelSel" class="btn danger" hidden>Delete object</button>
+  </aside>
+</div>
+
+<input type="file" id="fileIn" accept=".pdf,application/pdf,image/*" multiple hidden>
+<input type="file" id="imgIn" accept="image/*" hidden>
+
+<div class="modal" id="ocrModal" hidden>
+  <div class="dlg" role="dialog" aria-labelledby="ocrT">
+    <h2 id="ocrT">Recognize text (OCR)</h2>
+    <p class="hint">Reads the page image and turns each line into something you can click and rewrite. Runs in this tab.</p>
+    <label>Language<select id="ocrLang">
+      <option value="eng">English</option><option value="hin">Hindi (+ English)</option><option value="spa">Spanish (+ English)</option>
+      <option value="fra">French (+ English)</option><option value="deu">German (+ English)</option><option value="ita">Italian (+ English)</option>
+      <option value="por">Portuguese (+ English)</option><option value="rus">Russian (+ English)</option><option value="ara">Arabic (+ English)</option>
+      <option value="chi_sim">Chinese Simplified (+ English)</option><option value="jpn">Japanese (+ English)</option><option value="kor">Korean (+ English)</option>
+    </select></label>
+    <label>Pages<select id="ocrScope"><option value="cur">Current page</option><option value="scanned">Pages without a text layer</option><option value="all">All pages</option></select></label>
+    <label class="ck"><input type="checkbox" id="ocrEnhance" checked><span>Boost contrast first (helps faded or grey scans)</span></label>
+    <label class="ck"><input type="checkbox" id="ocrSearchable" checked><span>Make OCR pages searchable when exporting</span></label>
+    <div id="ocrProg" hidden><div class="bar-track"><div class="bar-fill" id="ocrBar"></div></div><p class="hint" id="ocrMsg"></p></div>
+    <div class="acts"><button class="btn" id="ocrCancel">Close</button><button class="btn primary" id="ocrGo">Start OCR</button></div>
+  </div>
+</div>
+
+<div class="modal" id="exportModal" hidden>
+  <div class="dlg" role="dialog" aria-labelledby="expT">
+    <h2 id="expT">Export PDF</h2>
+    <label>File name<input type="text" id="expName"></label>
+    <label class="ck"><input type="checkbox" id="expSearch" checked><span>Add invisible text to OCR pages so the file is searchable</span></label>
+    <label class="ck"><input type="checkbox" id="expFlat"><span>Flatten pages to images. Permanently removes anything hidden under whiteout and edits, but text is no longer selectable except OCR text.</span></label>
+    <div class="acts"><button class="btn" id="expCancel">Cancel</button><button class="btn primary" id="expGo">Export</button></div>
+  </div>
+</div>
+
+<div class="modal" id="busy" hidden>
+  <div class="dlg"><h2 id="busyT">Working</h2><div class="bar-track"><div class="bar-fill" id="busyBar"></div></div></div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="vendor/tesseract/tesseract.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

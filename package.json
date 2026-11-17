@@ -1,0 +1,14 @@
+{
+  "name": "pdf-studio",
+  "version": "1.0.0",
+  "description": "Browser-based PDF editor with OCR for scanned documents. No server, nothing uploaded or stored.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "npx --yes serve . -l 8080",
+    "test": "node tests/export.test.js"
+  },
+  "devDependencies": {
+    "pdf-lib": "1.17.1"
+  }
+}
